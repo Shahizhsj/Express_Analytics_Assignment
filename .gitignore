@@ -1,0 +1,8 @@
+.env
+__pycache__/
+*.db
+uploads/
+qdrant_data/
+.DS_Store
+venv/
+.vscode/
