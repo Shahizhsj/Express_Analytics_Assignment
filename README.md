@@ -1,21 +1,24 @@
-# American Analytics - AI-Powered Document Analysis System
+# American Analytics
 
-A sophisticated FastAPI-based backend system that leverages LLMs and vector databases to enable intelligent document retrieval and analysis. The system processes PDF documents, generates embeddings, and uses RAG (Retrieval Augmented Generation) for accurate question answering.
-
----
-
-## 📋 Table of Contents
-- [System Architecture](#system-architecture)
-- [Features](#features)
-- [Technology Stack](#technology-stack)
-- [Project Structure](#project-structure)
-- [API Endpoints](#api-endpoints)
-- [Setup & Installation](#setup--installation)
-- [Usage](#usage)
+A smart document analysis system that lets you upload PDFs and ask questions about them. It uses AI to understand what you're asking and finds the right information from your documents. Pretty straightforward - upload, ask, get answers.
 
 ---
 
-## 🏗️ System Architecture
+## What It Does
+
+**The basic idea**: You upload PDF files, then ask the system questions about them. Instead of searching manually, the AI reads through everything and gives you answers. It's like having a smart assistant who's read all your documents.
+
+**Some cool features:**
+- User accounts with login (secure with JWT tokens)
+- Upload PDFs and it automatically processes them
+- Ask questions in natural language - no complex queries needed
+- System gets smarter if it doesn't find what you want on the first try (retry mechanism)
+- Keep track of your questions and answers
+- Rate answers to help improve the system
+
+---
+
+## System Architecture
 
 ### High-Level Architecture Diagram
 
@@ -72,7 +75,7 @@ A sophisticated FastAPI-based backend system that leverages LLMs and vector data
 
 ---
 
-## 🔄 Data Flow Diagram
+## Data Flow Diagram
 
 ### Document Upload Flow
 ```
@@ -196,79 +199,71 @@ User Question (retry_count = 0)
       └──────────────────────────┘
 ```
 
-**Retry Logic Details:**
-- **Attempt 1 (retry_count=0)**: Initial query rewrite and search
-- **Attempt 2 (retry_count=1)**: If no relevant docs found, rewrite query differently and retry
-- **Attempt 3 (retry_count=2)**: Last retry attempt
-- **Max Retries Reached (retry_count >= 2)**: If still no relevant docs, generate answer with "Information not available"
+
+**Why the retry thing?**
+
+Sometimes your question doesn't match the documents perfectly the first time. Instead of just giving up, the system tries asking the question in different ways. If it still can't find anything after 2 retries, it tells you "sorry, can't find that info" instead of making stuff up.
 
 ---
 
-## ✨ Features
+## Features
 
 ### Core Features
-- **🔐 User Authentication**
+- **User Authentication**
   - User registration with password hashing (bcrypt)
   - JWT-based token authentication
   - Secure token generation and validation
 
-- **📄 Document Management**
+- **Document Management**
   - PDF upload and processing
   - Automatic text extraction using PyPDFLoader
   - Document storage with metadata tracking
   - Document deletion capability
 
-- **🤖 Intelligent Query Processing**
+- **Intelligent Query Processing**
   - Query rewriting for improved retrieval
   - Vector-based semantic search
   - Document reranking for relevance
   - Context-aware answer generation
 
-- **💬 Chat Management**
+- **Chat Management**
   - Persistent chat history storage
   - Multi-turn conversation support
   - User message tracking
 
-- **⭐ Feedback System**
+- **Feedback System**
   - User feedback on answers
   - Feedback storage and retrieval
 
 ---
 
-## 🛠️ Technology Stack
 
-### Backend Framework
-- **FastAPI** - Modern Python web framework
-- **Uvicorn** - ASGI server
+## Tech Stack
 
-### Database
-- **SQLite** - Relational database (user data, documents, answers)
-- **Qdrant** - Vector database (document embeddings, similarity search)
+**Server & API:**
+- FastAPI (modern, fast Python framework)
+- Uvicorn (runs the server)
 
-### Authentication & Security
-- **Python-Jose** - JWT token handling
-- **Passlib** - Password hashing
-- **BCrypt** - Secure password encryption
+**Databases:**
+- SQLite (stores user accounts, documents, Q&A, feedback)
+- Qdrant (vector database - super fast for searching by similarity)
 
-### AI/ML & NLP
-- **Google Gemini 2.5 Flash** - Large Language Model
-- **Cohere** - Embeddings and reranking
-- **LangChain** - Document loading and text splitting
-- **LangGraph** - Workflow orchestration
+**AI & Machine Learning:**
+- Google Gemini 2.5 Flash (the LLM - understands questions and generates answers)
+- Cohere (creates embeddings and ranks results)
+- LangGraph (manages the workflow - keeps everything coordinated)
 
-### Data Processing
-- **PyPDF** - PDF text extraction
-- **RecursiveCharacterTextSplitter** - Intelligent text chunking
-- **FAISS/Qdrant** - Vector similarity search
+**PDF Processing:**
+- PyPDF (reads PDFs)
+- LangChain (handles text splitting smartly)
 
-### Additional Tools
-- **Python-dotenv** - Environment variable management
-- **SQLAlchemy** - ORM for database operations
-- **Pydantic** - Data validation
+**Security:**
+- JWT tokens (for safe login)
+- Bcrypt (password hashing - keeps passwords secure)
 
 ---
 
-## 📁 Project Structure
+##  Project Structure
 
 ```
 American_analytics/
@@ -289,7 +284,7 @@ American_analytics/
 
 ---
 
-## 🔌 API Endpoints
+##  API Endpoints
 
 ### Authentication
 | Method | Endpoint | Description |
@@ -313,7 +308,67 @@ American_analytics/
 
 ---
 
-## 🚀 Setup & Installation
+## The Smart Parts Explained
+
+### Query Rewriter
+When you ask a question, the system doesn't just search as-is. It gets Gemini to rephrase your question to be more likely to find matches in the documents. This handles natural language variations - if you ask "what's the topic?" vs "summarize the main point", it converts both to a consistent search query.
+
+### Document Grading
+After retrieving documents, instead of just taking whatever was found, the system asks "are these actually relevant?" for each one. If they're not relevant, it retries with a different question rewrite. This prevents hallucinations - the AI won't make up answers when it doesn't have the info.
+
+### Retry Logic
+If the first search doesn't find anything useful:
+- **Attempt 1**: Initial question search
+- **Attempt 2**: Rewrites and searches again
+- **Attempt 3**: One more try
+- **If still nothing**: Returns "Information not available" instead of guessing
+
+This makes the system much more reliable.
+
+### Conversation Memory
+The system keeps track of your conversation history, so if you ask follow-up questions, it understands the context. It's not just answering individual questions in isolation.
+
+---
+
+
+## Database Structure
+
+**Users Table:**
+- Store usernames and hashed passwords
+
+**Documents Table:**
+- Keep track of uploaded PDFs
+- File paths, upload times
+
+**ChatHistory Table:**
+- Every message in every conversation
+- Helps with context in follow-up questions
+
+**Answers Table:**
+- All Q&A pairs
+- When they were asked
+
+**Feedback Table:**
+- User ratings on answers
+- Helps identify good vs bad responses
+
+**Qdrant (Vector DB):**
+- Stores document chunks as embeddings
+- Organized for super-fast similarity search
+---
+
+
+##  Docker Deployment
+
+Build and run with Docker:
+```bash
+docker build -t american-analytics .
+docker run -p 8000:8000 --env-file .env american-analytics
+```
+
+---
+
+##  Setup & Installation
 
 ### Prerequisites
 - Python 3.8+
@@ -337,12 +392,12 @@ pip install -r requirements.txt
 ```
 
 ### Step 4: Configure Environment Variables
-### API Keys Required
+ API Keys Required
 
-### Google Gemini API Key
+Google Gemini API Key
 https://aistudio.google.com/app/apikey
 
-### Cohere API Key
+ Cohere API Key
 https://dashboard.cohere.com/api-keys
 
 Create a `.env` file with your API keys:
@@ -365,144 +420,7 @@ Server will be available at `http://localhost:8000`
 ---
 
 ## 📖 Usage
-
-### 1. Register User
-```bash
-curl -X POST "http://localhost:8000/register" \
-  -H "Content-Type: application/json" \
-  -d '{"username": "user1", "password": "password123"}'
-```
-
-### 2. Login & Get Token
-```bash
-curl -X POST "http://localhost:8000/token" \
-  -H "Content-Type: application/x-www-form-urlencoded" \
-  -d "username=user1&password=password123"
-```
-
-### 3. Upload Document
-```bash
-curl -X POST "http://localhost:8000/documents/upload" \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
-  -F "file=@document.pdf"
-```
-
-### 4. Ask Question
-```bash
-curl -X POST "http://localhost:8000/query/What%20is%20the%20main%20topic?" \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN"
-```
-
-### 5. View Answers
-```bash
-curl -X GET "http://localhost:8000/showanswers" \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN"
-```
-
-### 6. Submit Feedback
-```bash
-curl -X POST "http://localhost:8000/givefeedback" \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
-  -d '{"Id": "1", "feedback": "Answer was helpful"}'
-```
+you can test by using FastAPI swagger UI
 
 ---
 
-## 🔑 Key Components Explanation
-
-### 1. **config.py** - Central Configuration
-- Initializes Google Gemini and Cohere clients
-- Sets up Qdrant vector database
-- Stores authentication secrets
-- Creates upload directory
-
-### 2. **models.py** - Database Schema
-- **User**: Authentication & user management
-- **Document**: PDF metadata
-- **ChatHistory**: Conversation logs
-- **Answers**: Q&A records
-- **Feedback**: User ratings
-
-### 3. **langgraph_workflow.py** - RAG Pipeline with Intelligent Retry
-
-The workflow is a sophisticated 5-node LangGraph that implements adaptive query refinement:
-
-#### **Workflow Nodes:**
-1. **rewrite_query()** - Query optimization
-   - Uses Gemini to rephrase user query for better retrieval
-   - Improves semantic matching with stored documents
-
-2. **retrieve_documents()** - Multi-step retrieval
-   - Converts query to embedding (Cohere embed-v4.0, 1024 dims)
-   - Searches Qdrant for top 10 similar documents
-   - Reranks results with Cohere rerank-v3.5, keeps top 2 most relevant
-
-3. **grade_documents()** - Relevance validation
-   - **Critical Step**: Checks if retrieved documents are actually relevant
-   - Uses Gemini to grade each document as "relevant" or "irrelevant"
-   - Filters out low-quality matches
-
-4. **route_after_grading()** - Intelligent routing
-   - **IF** relevant docs found → proceed to answer generation
-   - **IF** no relevant docs AND retry_count < 2 → retry with different query rewrite
-   - **IF** retry_count >= 2 → proceed to answer generation anyway (with fallback message)
-
-5. **generate_answer()** - Context-aware response
-   - Uses filtered relevant documents as context
-   - Includes chat history for multi-turn conversations
-   - Falls back to "Information not available" if no context exists
-
-#### **Retry Mechanism (Max 2 Retries):**
-```
-Attempt 1: rewrite_query() → retrieve_documents() → grade_documents()
-         ↓ (No relevant docs found)
-Attempt 2: increment_retry() → rewrite_query() → retrieve_documents() → grade_documents()
-         ↓ (Still no relevant docs)
-Attempt 3: increment_retry() → rewrite_query() → retrieve_documents() → grade_documents()
-         ↓ (Max retries reached or docs found)
-         → generate_answer() → END
-```
-
-**Why This Matters:**
-- Handles edge cases where initial query doesn't match documents well
-- Automatically reformulates questions to find relevant content
-- Avoids hallucinations by grading relevance before answering
-- Gracefully degrades when no matching documents exist
-
-### 4. **main.py** - API Implementation
-- FastAPI routes
-- Request/response handling
-- Document processing pipeline
-- Authentication middleware
-
----
-
-## 🔒 Security Considerations
-
-- API keys stored in `.env` (never commit to repo)
-- JWT authentication for protected routes
-- Password hashing with bcrypt
-- SQL injection prevention via SQLAlchemy ORM
-- CORS should be configured for production
-
----
-
-## 📈 Performance Considerations
-
-- **Vector Database**: Qdrant for fast similarity search (O(log n))
-- **Text Chunking**: 1000 tokens per chunk for balanced retrieval
-- **Embedding Dimension**: 1024-dim vectors for rich semantic representation
-- **Caching**: Consider caching frequent queries in production
-
----
-
-## 🐳 Docker Deployment
-
-Build and run with Docker:
-```bash
-docker build -t american-analytics .
-docker run -p 8000:8000 --env-file .env american-analytics
-```
-
----
